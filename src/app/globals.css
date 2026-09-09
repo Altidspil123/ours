@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+@theme {
+  --color-plum-950: #0c0810;
+  --color-plum-900: #130c18;
+  --color-plum-850: #191022;
+  --color-plum-800: #211529;
+  --color-plum-700: #2e1d38;
+
+  --color-ink: #f6ece9;
+  --color-ink-dim: #c9aeaa;
+  --color-ink-faint: #9b7f85;
+
+  --color-rose-200: #ffd9e0;
+  --color-rose-300: #f4b8c6;
+  --color-rose-400: #ee93a8;
+  --color-rose-500: #e56d8a;
+  --color-rose-600: #cf4f71;
+
+  --color-gold-200: #f5dfba;
+  --color-gold-300: #ecd0a0;
+  --color-gold-400: #e0b578;
+
+  --color-lav-300: #ceb0ef;
+  --color-lav-400: #b48ce2;
+
+  --color-aqua-300: #a4e3e2;
+  --color-aqua-400: #6bc7c6;
+
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-glow-rose: 0 0 40px -8px rgba(229, 109, 138, 0.45);
+  --shadow-glow-gold: 0 0 40px -8px rgba(224, 181, 120, 0.4);
+
+  --animate-drift-slow: drift 26s ease-in-out infinite alternate;
+  --animate-drift-slower: drift 38s ease-in-out infinite alternate-reverse;
+  --animate-pulse-soft: pulse-soft 4.5s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4%, 6%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(7%, -5%, 0) scale(1.04);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(1100px 700px at 85% -10%, rgba(207, 79, 113, 0.16), transparent 60%),
+    radial-gradient(900px 700px at -15% 110%, rgba(91, 52, 118, 0.22), transparent 55%),
+    #0c0810;
+  color: var(--color-ink);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(229, 109, 138, 0.35);
+  color: #fff;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(238, 147, 168, 0.25) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(238, 147, 168, 0.25);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+/* hide number input arrows used for cycle length */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.glass-strong {
+  background: rgba(23, 14, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.text-rose-glow {
+  text-shadow: 0 0 26px rgba(229, 109, 138, 0.5);
+}
+
+.ring-focus:focus-visible {
+  outline: 2px solid rgba(238, 147, 168, 0.6);
+  outline-offset: 2px;
+}
