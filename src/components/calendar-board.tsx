@@ -3,6 +3,7 @@
 import {
   addDays,
   addMonths,
+  differenceInCalendarDays,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
@@ -66,6 +67,17 @@ interface PredictionDTO {
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const COLOR_KEYS = ["rose", "gold", "violet", "aqua"] as const;
+const UPCOMING_PREVIEW = 6;
+
+/** "today" · "tomorrow" · "in 5 days" · "in 3 weeks" · "in 2 months" */
+function countdownLabel(daysAway: number): string {
+  if (daysAway <= 0) return "today";
+  if (daysAway === 1) return "tomorrow";
+  if (daysAway < 7) return `in ${daysAway} days`;
+  if (daysAway < 14) return "next week";
+  if (daysAway < 60) return `in ${Math.round(daysAway / 7)} weeks`;
+  return `in ${Math.round(daysAway / 30)} months`;
+}
 
 export function CalendarBoard({
   profile,
@@ -86,6 +98,7 @@ export function CalendarBoard({
   const [events, setEvents] = useState(initialEvents);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<EventDTO | null>(null);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
 
   const refetch = async () => {
     try {
@@ -142,6 +155,23 @@ export function CalendarBoard({
   }, [events]);
 
   const selectedEvents = byDay.get(selected) ?? [];
+
+  // ── everything still ahead of us, nearest first ────────────────────────────
+  const upcoming = useMemo(
+    () =>
+      events
+        .filter((e) => e.date >= todayIso)
+        .sort((a, b) =>
+          `${a.date}T${a.time ?? "23:59"}`.localeCompare(
+            `${b.date}T${b.time ?? "23:59"}`,
+          ),
+        ),
+    [events, todayIso],
+  );
+
+  const visibleUpcoming = showAllUpcoming
+    ? upcoming
+    : upcoming.slice(0, UPCOMING_PREVIEW);
 
   return (
     <div>
@@ -325,6 +355,68 @@ export function CalendarBoard({
         )}
       </div>
 
+      {/* ── what's coming ─────────────────────────────────────────────── */}
+      <div className="mt-10">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-gold-300/80">
+              on the horizon
+            </p>
+            <h2 className="font-display mt-1 text-3xl italic text-ink">
+              What&apos;s coming
+            </h2>
+          </div>
+          {upcoming.length > 0 && (
+            <span className="mb-1.5 shrink-0 text-[11px] text-ink-faint">
+              {upcoming.length} ahead
+            </span>
+          )}
+        </div>
+
+        {upcoming.length === 0 ? (
+          <div className="glass rounded-3xl px-6 py-10 text-center">
+            <CalendarPlus className="mx-auto h-6 w-6 text-ink-faint/70" />
+            <p className="font-display mt-3 text-xl italic text-ink-dim">
+              Nothing on the horizon yet.
+            </p>
+            <p className="mt-1 text-sm text-ink-faint">
+              Give {partnerName} something to look forward to.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2.5">
+              <AnimatePresence initial={false}>
+                {visibleUpcoming.map((event, i) => (
+                  <UpcomingRow
+                    key={event.id}
+                    event={event}
+                    index={i}
+                    isNext={i === 0}
+                    onJump={() => {
+                      setSelected(event.date);
+                      setCursor(startOfMonth(parseISO(event.date)));
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {upcoming.length > UPCOMING_PREVIEW && (
+              <button
+                onClick={() => setShowAllUpcoming((v) => !v)}
+                className="mt-3 w-full rounded-2xl border border-white/10 bg-white/[0.03] py-2.5 text-xs uppercase tracking-[0.2em] text-ink-dim transition-colors hover:border-white/20 hover:text-ink"
+              >
+                {showAllUpcoming
+                  ? "show less"
+                  : `show all ${upcoming.length} plans`}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
       <EventFormModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -339,6 +431,123 @@ export function CalendarBoard({
         initialDate={selected}
       />
     </div>
+  );
+}
+
+/* ── one row in the "what's coming" list ───────────────────────────────────── */
+function UpcomingRow({
+  event,
+  index,
+  isNext,
+  onJump,
+}: {
+  event: EventDTO;
+  index: number;
+  isNext: boolean;
+  onJump: () => void;
+}) {
+  const color = EVENT_COLORS[event.color] ?? EVENT_COLORS.rose;
+  const when = parseISO(event.date);
+  const daysAway = differenceInCalendarDays(when, new Date());
+  const doneCount = event.items.filter((i) => i.done).length;
+  const label = countdownLabel(daysAway);
+
+  return (
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{
+        duration: 0.3,
+        delay: Math.min(index, 6) * 0.04,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      onClick={onJump}
+      className={cn(
+        "group flex w-full items-center gap-4 overflow-hidden rounded-3xl border p-3.5 text-left transition-all hover:translate-x-0.5",
+        isNext
+          ? "border-white/15 bg-white/[0.06]"
+          : "border-white/[0.07] bg-white/[0.025] hover:border-white/15",
+      )}
+    >
+      {/* date block */}
+      <div
+        className="relative grid h-14 w-14 shrink-0 place-items-center rounded-2xl"
+        style={{
+          background: `linear-gradient(150deg, ${color}2e, ${color}0f)`,
+          boxShadow: isNext ? `0 0 24px -10px ${color}` : undefined,
+        }}
+      >
+        <span
+          className="absolute inset-x-0 top-0 h-0.5 rounded-full"
+          style={{ background: color }}
+        />
+        <div className="text-center leading-none">
+          <p className="font-display text-2xl text-ink">{format(when, "d")}</p>
+          <p className="mt-0.5 text-[9px] uppercase tracking-[0.18em] text-ink-faint">
+            {format(when, "MMM")}
+          </p>
+        </div>
+      </div>
+
+      {/* body */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="truncate font-display text-xl italic leading-tight text-ink">
+            {event.title}
+          </h3>
+          {isNext && (
+            <span className="shrink-0 rounded-full border border-gold-300/30 bg-gold-400/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.15em] text-gold-300">
+              next up
+            </span>
+          )}
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]">
+          <span className="text-ink-faint">{format(when, "EEEE")}</span>
+          {event.time && (
+            <>
+              <span className="text-ink-faint/40">·</span>
+              <span className="text-ink-dim">{event.time}</span>
+            </>
+          )}
+          {event.items.length > 0 && (
+            <>
+              <span className="text-ink-faint/40">·</span>
+              <span
+                className={cn(
+                  doneCount === event.items.length
+                    ? "text-emerald-300/90"
+                    : "text-ink-faint",
+                )}
+              >
+                {doneCount === event.items.length ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Check className="h-3 w-3" /> all set
+                  </span>
+                ) : (
+                  `${doneCount}/${event.items.length} ready`
+                )}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* countdown */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span
+          className="rounded-full px-2.5 py-1 text-[10px] font-medium"
+          style={{
+            background: daysAway <= 1 ? `${color}26` : "rgba(255,255,255,0.05)",
+            color: daysAway <= 1 ? color : undefined,
+          }}
+        >
+          <span className={daysAway <= 1 ? "" : "text-ink-dim"}>{label}</span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-ink-faint transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </motion.button>
   );
 }
 

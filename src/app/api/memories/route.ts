@@ -1,15 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { memories } from "@/db/schema";
 import { getSession } from "@/lib/session";
+import { getCouple } from "@/lib/data";
+import { sendPushToProfile } from "@/lib/push";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Photos uploaded from a phone arrive as compressed data: URLs; links from
+// the web arrive as normal http(s) urls. Both are fine.
+const MAX_UPLOAD_CHARS = 4_500_000; // ~3.3 MB of image after base64
 
 function cleanUrl(u: unknown): string | null {
   if (typeof u !== "string") return null;
   const t = u.trim();
   if (!t) return null;
+  if (/^data:image\/(jpeg|jpg|png|webp|gif);base64,[a-z0-9+/=]+$/i.test(t)) {
+    return t.length <= MAX_UPLOAD_CHARS ? t : null;
+  }
   if (/^(https?:)?\/\//i.test(t) || t.startsWith("/")) return t;
   return null;
 }
@@ -46,6 +55,27 @@ export async function POST(req: NextRequest) {
       createdBy: profile,
     })
     .returning();
+
+  // Let the other one know a new memory landed on the wall.
+  const partner = profile === "him" ? "her" : "him";
+  after(async () => {
+    try {
+      const couple = await getCouple();
+      const senderName = profile === "him" ? couple.himName : couple.herName;
+      await sendPushToProfile(partner, {
+        title: `${senderName} pinned a new memory`,
+        body: memory.caption
+          ? `“${memory.caption.slice(0, 120)}”`
+          : "Something they never want to forget. Tap to see it.",
+        url: "/memories",
+        kind: "text",
+        tag: "ours-memory",
+      });
+    } catch {
+      /* push is best-effort */
+    }
+  });
+
   return NextResponse.json({ memory });
 }
 

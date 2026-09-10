@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTransition, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
+import { playMessageChime, playSignalChime } from "@/lib/sound";
 
 const NAV = [
   { href: "/", label: "Home", icon: House },
@@ -52,6 +53,98 @@ export function Chrome({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  // ── unread chat badge + soft alert while browsing other pages ──────────
+  // NOTE: all hooks must live above the early return below — hook count
+  // must stay identical whether we're locked out or signed in.
+  const [unread, setUnread] = useState<{
+    count: number;
+    latestId: number | null;
+    latestKind: "text" | "signal";
+  }>({ count: 0, latestId: null, latestKind: "text" });
+  const [memUnread, setMemUnread] = useState(0);
+  const lastUnseenRef = useRef(0);
+
+  const pollUnread = useCallback(async () => {
+    if (!profile || pathname === "/unlock") return;
+    try {
+      const res = await fetch("/api/chat/unread", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        count: number;
+        latestId: number | null;
+        latestKind: "text" | "signal";
+      };
+      setUnread(data);
+
+      // Chime once per brand-new message, but never on the chat page
+      // (the chat room handles its own alerts) and never twice per id.
+      if (
+        data.count > 0 &&
+        data.latestId !== null &&
+        data.latestId > lastUnseenRef.current &&
+        !pathname.startsWith("/chat")
+      ) {
+        try {
+          const raw = localStorage.getItem("ours_last_ping");
+          if (raw) {
+            const stamp = JSON.parse(raw) as { id: number; t: number };
+            if (stamp.id === data.latestId && Date.now() - stamp.t < 8000) {
+              lastUnseenRef.current = data.latestId;
+              return;
+            }
+          }
+        } catch {
+          /* ignore */
+        }
+        localStorage.setItem(
+          "ours_last_ping",
+          JSON.stringify({ id: data.latestId, t: Date.now() }),
+        );
+        if (data.latestKind === "signal") playSignalChime();
+        else playMessageChime();
+      }
+      if (data.latestId !== null) {
+        lastUnseenRef.current = Math.max(lastUnseenRef.current, data.latestId);
+      }
+    } catch {
+      /* offline — next tick */
+    }
+
+    // New memories on the wall?
+    try {
+      const res = await fetch("/api/memories/unread", { cache: "no-store" });
+      if (res.ok) {
+        const m = (await res.json()) as { count: number };
+        setMemUnread(m.count);
+      }
+    } catch {
+      /* offline — next tick */
+    }
+  }, [pathname, profile]);
+
+  useEffect(() => {
+    void pollUnread();
+    const t = setInterval(pollUnread, 6000);
+    return () => clearInterval(t);
+  }, [pollUnread]);
+
+  // Instant badge refresh when a push is forwarded to the open tab.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === "ours:push") void pollUnread();
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [pollUnread]);
+
+  // The hideaway is a world of its own — no header, no nav, no chrome.
+  if (pathname.startsWith("/hideaway")) {
+    return <>{children}</>;
+  }
+
+  // Locked-out shell (lock screen). Hooks all live above this line.
   if (pathname === "/unlock" || !profile) {
     return (
       <div className="relative z-10 min-h-dvh">
@@ -84,7 +177,16 @@ export function Chrome({
     <div className="relative z-10 flex min-h-dvh flex-col">
       {/* ── top bar ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40">
-        <div className="glass-strong border-x-0 border-t-0">
+        <div className="relative isolate border-b border-white/[0.08]">
+          {/* same frosted treatment as the bottom menu */}
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 backdrop-blur-[5px] backdrop-saturate-150"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(12,8,16,0.12), rgba(12,8,16,0.2))",
+            }}
+          />
           <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-4 sm:px-6">
             <Link
               href="/"
@@ -133,9 +235,30 @@ export function Chrome({
 
       {/* ── bottom nav ──────────────────────────────────────────── */}
       <nav className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-        <div className="pointer-events-auto glass-strong relative flex items-end gap-0.5 rounded-full px-3 py-2 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.8)]">
+          <div className="pointer-events-auto relative isolate flex items-end gap-0.5 rounded-full px-3 py-2 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.55)]">
+            {/* frosted backdrop layer — same proven pattern as the chat veil,
+                because Safari ignores backdrop-filter on the container itself */}
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-10 rounded-full border border-white/[0.08] backdrop-blur-[5px] backdrop-saturate-150"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(12,8,16,0.12), rgba(12,8,16,0.2))",
+              }}
+            />
           {NAV.slice(0, 3).map((item) => (
-            <NavItem key={item.href} {...item} active={isActive(item.href)} />
+            <NavItem
+              key={item.href}
+              {...item}
+              active={isActive(item.href)}
+              badge={
+                item.href === "/chat"
+                  ? unread
+                  : item.href === "/memories"
+                    ? { count: memUnread, latestKind: "text" as const }
+                    : undefined
+              }
+            />
           ))}
 
           {/* the spicy center */}
@@ -169,7 +292,18 @@ export function Chrome({
           </Link>
 
           {NAV.slice(3).map((item) => (
-            <NavItem key={item.href} {...item} active={isActive(item.href)} />
+            <NavItem
+              key={item.href}
+              {...item}
+              active={isActive(item.href)}
+              badge={
+                item.href === "/chat"
+                  ? unread
+                  : item.href === "/memories"
+                    ? { count: memUnread, latestKind: "text" as const }
+                    : undefined
+              }
+            />
           ))}
         </div>
       </nav>
@@ -182,11 +316,13 @@ function NavItem({
   label,
   icon: Icon,
   active,
+  badge,
 }: {
   href: string;
   label: string;
   icon: typeof House;
   active: boolean;
+  badge?: { count: number; latestKind: "text" | "signal" };
 }) {
   return (
     <Link
@@ -203,7 +339,24 @@ function NavItem({
           className="absolute inset-x-1 top-0.5 bottom-[18px] rounded-full bg-rose-400/10"
         />
       )}
-      <Icon className="relative h-[19px] w-[19px]" strokeWidth={1.8} />
+      <span className="relative">
+        <Icon className="relative h-[19px] w-[19px]" strokeWidth={1.8} />
+        {badge && badge.count > 0 && (
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 500, damping: 20 }}
+            className={cn(
+              "absolute -right-2.5 -top-1.5 grid min-h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-semibold leading-none text-white",
+              badge.latestKind === "signal"
+                ? "bg-gradient-to-br from-aqua-400 to-lav-400 shadow-[0_0_10px_rgba(107,199,198,0.8)]"
+                : "bg-gradient-to-br from-rose-500 to-rose-600 shadow-glow-rose",
+            )}
+          >
+            {badge.count > 9 ? "9+" : badge.count}
+          </motion.span>
+        )}
+      </span>
       <span className="relative text-[9px] font-medium uppercase tracking-[0.14em]">
         {label}
       </span>

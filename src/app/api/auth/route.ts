@@ -30,9 +30,12 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true });
+  // sameSite "none" + secure lets the session work inside embedded preview
+  // frames too; the app always runs over HTTPS in production anyway.
   res.cookies.set(SESSION_COOKIE, makeToken(profile), {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
+    secure: true,
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
@@ -43,7 +46,8 @@ export async function DELETE() {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, "", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
+    secure: true,
     path: "/",
     maxAge: 0,
   });

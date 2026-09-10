@@ -24,6 +24,40 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   profile: text("profile").notNull(), // 'him' | 'her'
   text: text("text").notNull(),
+  kind: text("kind").notNull().default("text"), // 'text' | 'signal'
+  editedAt: timestamp("edited_at", { withTimezone: true }),
+  pinnedAt: timestamp("pinned_at", { withTimezone: true }),
+  pinnedBy: text("pinned_by"), // 'him' | 'her'
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Chat read cursors (one row per profile) ─────────────────────────────────
+export const chatReads = pgTable("chat_reads", {
+  profile: text("profile").primaryKey(), // 'him' | 'her'
+  lastSeenId: integer("last_seen_id").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Memories read cursors (one row per profile) ─────────────────────────────
+export const memoryReads = pgTable("memory_reads", {
+  profile: text("profile").primaryKey(), // 'him' | 'her'
+  lastSeenId: integer("last_seen_id").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Web push subscriptions (for closed-app notifications) ──────────────────
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  profile: text("profile").notNull(), // 'him' | 'her'
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -114,6 +148,9 @@ export const memories = pgTable("memories", {
 // ─── Types ───────────────────────────────────────────────────────────────────
 export type Couple = typeof couple.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type ChatRead = typeof chatReads.$inferSelect;
+export type MemoryRead = typeof memoryReads.$inferSelect;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type SpicyCard = typeof spicyCards.$inferSelect;
 export type SpicyDraw = typeof spicyDraws.$inferSelect;
 export type Event = typeof events.$inferSelect;

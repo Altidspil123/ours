@@ -1,6 +1,13 @@
 -- ─────────────────────────────────────────────────────────────
 --  ours. — database setup, the paste-and-run edition
 --
+--  ⚠️  FIRST-TIME SETUP ONLY.
+--  If your app is already live and has your cards, photos and messages in
+--  it, you do NOT need this file — skip to the db-update-*.sql files.
+--  (Running this on a live database is harmless — every CREATE TABLE will
+--  simply error with "already exists" and nothing is deleted — but there's
+--  no reason to run it.)
+--
 --  HOW TO USE THIS FILE (30 seconds):
 --  1. Open your Neon database in the browser (via Vercel → Storage,
 --     or neon.tech console) and click "SQL Editor" in the left menu.
@@ -57,6 +64,31 @@ CREATE TABLE "messages" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"profile" text NOT NULL,
 	"text" text NOT NULL,
+	"kind" text DEFAULT 'text' NOT NULL,
+	"edited_at" timestamp with time zone,
+	"pinned_at" timestamp with time zone,
+	"pinned_by" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE "chat_reads" (
+	"profile" text PRIMARY KEY NOT NULL,
+	"last_seen_id" integer DEFAULT 0 NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE "memory_reads" (
+	"profile" text PRIMARY KEY NOT NULL,
+	"last_seen_id" integer DEFAULT 0 NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE "push_subscriptions" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"profile" text NOT NULL,
+	"endpoint" text NOT NULL UNIQUE,
+	"p256dh" text NOT NULL,
+	"auth" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 

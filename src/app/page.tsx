@@ -87,7 +87,10 @@ export default async function HomePage() {
       lastMessage={
         lastMessage
           ? {
-              text: lastMessage.text,
+              text:
+                lastMessage.kind === "signal"
+                  ? "sent the splash signal — droplets everywhere"
+                  : lastMessage.text,
               profile: lastMessage.profile,
               createdAt: lastMessage.createdAt.toISOString(),
             }

@@ -1,7 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { HeartHandshake, KeyRound, LoaderCircle } from "lucide-react";
+import {
+  ExternalLink,
+  HeartHandshake,
+  KeyRound,
+  LoaderCircle,
+  ShieldAlert,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";

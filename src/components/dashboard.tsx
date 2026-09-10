@@ -8,6 +8,7 @@ import {
   Flame,
   Images,
   MessageCircle,
+  Moon,
   PenLine,
   Sparkles,
 } from "lucide-react";
@@ -125,13 +126,32 @@ export function Dashboard({
   return (
     <div className="space-y-4">
       {/* greeting */}
-      <motion.div variants={rise} initial="hidden" animate="show" custom={0}>
-        <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-rose-300/70">
-          {greeting ?? "\u00A0"}
-        </p>
-        <h1 className="font-display mt-1 text-4xl italic leading-tight text-ink sm:text-5xl">
-          {meName}, <span className="not-italic text-ink-dim">{partnerName} misses you.</span>
-        </h1>
+      <motion.div
+        variants={rise}
+        initial="hidden"
+        animate="show"
+        custom={0}
+        className="flex items-start justify-between gap-3"
+      >
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-rose-300/70">
+            {greeting ?? "\u00A0"}
+          </p>
+          <h1 className="font-display mt-1 text-4xl italic leading-tight text-ink sm:text-5xl">
+            {meName}, <span className="not-italic text-ink-dim">{partnerName} misses you.</span>
+          </h1>
+        </div>
+
+        {/* the little door — only way into the hideaway */}
+        <Link
+          href="/hideaway"
+          aria-label="Somewhere quiet"
+          title="somewhere quiet"
+          className="group relative mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/[0.07] bg-white/[0.02] text-ink-faint/50 transition-all duration-500 hover:border-rose-400/30 hover:text-rose-300"
+        >
+          <Moon className="h-4 w-4 transition-transform duration-500 group-hover:-rotate-12" />
+          <span className="absolute inset-0 rounded-full opacity-0 shadow-glow-rose transition-opacity duration-500 group-hover:opacity-100" />
+        </Link>
       </motion.div>
 
       {/* hero — days together */}
@@ -212,12 +232,25 @@ export function Dashboard({
       <div className="grid grid-cols-2 gap-4">
         {/* cycle */}
         <motion.div variants={rise} initial="hidden" animate="show" custom={3}>
-          <Link href="/cycle" className="glass group flex h-full min-h-[10.5rem] flex-col justify-between rounded-[1.75rem] p-5 transition-colors hover:border-white/20">
-            <div className="flex items-center justify-between text-ink-faint">
+          <Link
+            href="/cycle"
+            className="group relative flex h-full min-h-[10.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] border border-rose-400/20 p-5 transition-colors hover:border-rose-400/35"
+            style={{
+              background:
+                "linear-gradient(150deg, rgba(229,109,138,0.10), rgba(30,16,34,0.5))",
+            }}
+          >
+            <img
+              src="/img/cycle.jpg"
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover opacity-[0.28] transition-opacity duration-500 group-hover:opacity-40 [mask-image:linear-gradient(200deg,black,transparent_78%)]"
+            />
+            <div className="relative flex items-center justify-between text-ink-faint">
               <Droplets className="h-4 w-4 text-rose-400" />
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </div>
-            <div>
+            <div className="relative">
               {cycle.hasData ? (
                 <>
                   <p className="font-display text-3xl leading-none text-ink">
@@ -286,12 +319,25 @@ export function Dashboard({
 
         {/* next event */}
         <motion.div variants={rise} initial="hidden" animate="show" custom={5}>
-          <Link href="/calendar" className="glass group flex h-full min-h-[10.5rem] flex-col justify-between rounded-[1.75rem] p-5 transition-colors hover:border-white/20">
-            <div className="flex items-center justify-between text-ink-faint">
+          <Link
+            href="/calendar"
+            className="group relative flex h-full min-h-[10.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] border border-gold-300/20 p-5 transition-colors hover:border-gold-300/35"
+            style={{
+              background:
+                "linear-gradient(150deg, rgba(224,181,120,0.10), rgba(30,20,28,0.5))",
+            }}
+          >
+            <img
+              src="/img/calendar.jpg"
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover opacity-[0.30] transition-opacity duration-500 group-hover:opacity-[0.42] [mask-image:linear-gradient(160deg,black,transparent_78%)]"
+            />
+            <div className="relative flex items-center justify-between text-ink-faint">
               <CalendarHeart className="h-4 w-4 text-gold-300" />
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </div>
-            <div>
+            <div className="relative">
               {nextEvent ? (
                 <>
                   <p className="font-display truncate text-2xl italic leading-tight text-ink">
@@ -349,12 +395,25 @@ export function Dashboard({
 
         {/* chat */}
         <motion.div variants={rise} initial="hidden" animate="show" custom={6}>
-          <Link href="/chat" className="glass group flex h-full min-h-[10.5rem] flex-col justify-between rounded-[1.75rem] p-5 transition-colors hover:border-white/20">
-            <div className="flex items-center justify-between text-ink-faint">
+          <Link
+            href="/chat"
+            className="group relative flex h-full min-h-[10.5rem] flex-col justify-between overflow-hidden rounded-[1.75rem] border border-aqua-300/20 p-5 transition-colors hover:border-aqua-300/35"
+            style={{
+              background:
+                "linear-gradient(150deg, rgba(107,199,198,0.10), rgba(22,20,34,0.5))",
+            }}
+          >
+            <img
+              src="/img/whisper.jpg"
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover opacity-[0.28] transition-opacity duration-500 group-hover:opacity-40 [mask-image:linear-gradient(140deg,black,transparent_75%)]"
+            />
+            <div className="relative flex items-center justify-between text-ink-faint">
               <MessageCircle className="h-4 w-4 text-aqua-300" />
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </div>
-            <div>
+            <div className="relative">
               <p className="font-display text-2xl italic leading-tight text-ink">
                 Whisper
               </p>

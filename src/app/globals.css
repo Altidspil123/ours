@@ -36,6 +36,31 @@
   --animate-drift-slow: drift 26s ease-in-out infinite alternate;
   --animate-drift-slower: drift 38s ease-in-out infinite alternate-reverse;
   --animate-pulse-soft: pulse-soft 4.5s ease-in-out infinite;
+  --animate-signal-ring: signal-ring 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-shimmer-sweep: shimmer-sweep 3.2s linear infinite;
+}
+
+@keyframes signal-ring {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.18;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -200% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
 }
 
 @keyframes drift {
@@ -131,6 +156,8 @@ input[type="number"]::-webkit-inner-spin-button {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
+
+
 
 .text-rose-glow {
   text-shadow: 0 0 26px rgba(229, 109, 138, 0.5);

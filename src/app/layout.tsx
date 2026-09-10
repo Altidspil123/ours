@@ -23,6 +23,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "ours · just us two",
   description: "A small universe built for exactly two people.",
+  icons: { icon: "/icon.png", apple: "/icon.png" },
+  appleWebApp: {
+    capable: true,
+    title: "ours.",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
